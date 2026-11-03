@@ -53,12 +53,23 @@ python -m agentos.workloads.demo_overlap
 
 演示命令会在当前目录生成运行时数据 `var/`，该目录不纳入版本控制。
 
+## 持续集成
+
+`.github/workflows/ci.yml` 在 push / PR 时运行：
+
+- 全量测试矩阵：Ubuntu（Python 3.11/3.12/3.13）与 Windows（Python 3.12）
+- **Role A acceptance gate**：独立运行 PCB、虚拟时钟、主循环、FCFS、RR 的测试与验收演示
+- 构建 sdist/wheel 并上传 artifact
+
+打 `v*` tag 时 `release.yml` 会重新测试、构建并创建 GitHub Release。详见 [CI/CD 说明](docs/ci.md)。
+
 ## 文档
 
 - [内核设计文档](docs/design/AgentOS-调度内核设计.md)
 - [课程作业说明（PDF）](docs/reference/L10-期末大作业agentos.pdf)
 - [四人分工表](docs/reference/ref.png)
 - [Role A 验收记录](docs/reports/role-a-acceptance.md)
+- [CI/CD 说明](docs/ci.md)
 
 ## 开发分工
 

@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tests (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.11"
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: ubuntu-latest
+            python: "3.13"
+          - os: windows-latest
+            python: "3.12"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run full test suite
+        run: python -m pytest -q
+
+  role-a-gate:
+    name: Role A acceptance gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      # Role A owns PCB/clock/main loop/FCFS/RR. These files must stay green
+      # even when later roles add their own schedulers, workloads, or traces.
+      - name: Role A tests
+        run: |
+          python -m pytest -q \
+            tests/test_pcb_states.py \
+            tests/test_issue_clock.py \
+            tests/test_no_sleep.py \
+            tests/test_fifo_convoy.py \
+            tests/test_tool_overlap.py \
+            tests/test_snapshot_owner.py \
+            tests/test_rr_quantum.py
+
+      # Guards the two demo entry points that are shown at the defense.
+      - name: Demo smoke checks
+        run: |
+          python - <<'PY'
+          import re
+          import subprocess
+          import sys
+
+          def run(module: str) -> str:
+              proc = subprocess.run(
+                  [sys.executable, "-m", module],
+                  capture_output=True,
+                  text=True,
+                  timeout=10,
+              )
+              print(proc.stdout)
+              print(proc.stderr)
+              assert proc.returncode == 0, f"{module} exited {proc.returncode}"
+              return proc.stdout
+
+          preempt = run("agentos.workloads.demo_preempt")
+          assert "t=160 queue=[2, 1] yielded=[]" in preempt
+          match = re.search(r"L state=DONE step=(\d+)", preempt)
+          assert match and int(match.group(1)) >= 4, preempt
+          assert "S state=DONE" in preempt
+
+          overlap = run("agentos.workloads.demo_overlap")
+          assert "A=DONE B=DONE tool_done.ts_ms=540" in overlap, overlap
+          PY
+
+  package:
+    name: Build distributions
+    needs: [test, role-a-gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Smoke-test the wheel
+        run: |
+          python -m pip install --force-reinstall dist/*.whl
+          python -c "import agentos; from agentos.kernel.loop import Kernel; print('wheel import ok')"
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
