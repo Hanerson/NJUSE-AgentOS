@@ -1,0 +1,79 @@
+"""Frozen kernel constants. Policies must not restate these numbers."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+QUANTUM_TOKENS = 256
+PRIO_MIN = 0
+PRIO_MAX = 4
+DEFAULT_BASE_PRIORITY = 2
+A = 1
+B = 1
+C = 1
+K = 3
+AGING_QUANTUM_MS = 500
+AGING_CAP = 2
+LLM_RESOURCE_BACKOFF_MS = 200
+TOOL_BACKOFF_MS = 400
+SEARCH_FAIL_P = 0.5
+SEARCH_SERVICE_MS = 500
+READ_LOCAL_SERVICE_MS = 20
+WRITE_REPORT_SERVICE_MS = 150
+RECALL_CPU_MS = 5
+SHORT_LLM_TOKENS = 64
+LONG_LLM_TOKENS = 160
+IO_LLM_TOKENS = 96
+SHORT_LLM_MS = 50
+LONG_LLM_MS = 120
+IO_LLM_MS = 80
+PARSE_FAIL_CPU_MS = 40
+RESOURCE_FAIL_CPU_MS = 10
+EXPERIMENT_N = 40
+EXPERIMENT_SEED = 20261103
+ARRIVAL_GAP_MS = 30
+CONTEXT_SOFT_CAP_TOKENS = 4096
+HTTP_TIMEOUT_S = 30
+HTTP_MAX_TOKENS = 512
+MAX_STEPS_BY_CLASS = {"short": 4, "long": 16, "io": 16, "flaky": 12}
+
+
+@dataclass(frozen=True)
+class Config:
+    QUANTUM_TOKENS: int = QUANTUM_TOKENS
+    PRIO_MIN: int = PRIO_MIN
+    PRIO_MAX: int = PRIO_MAX
+    DEFAULT_BASE_PRIORITY: int = DEFAULT_BASE_PRIORITY
+    A: int = A
+    B: int = B
+    C: int = C
+    K: int = K
+    AGING_QUANTUM_MS: int = AGING_QUANTUM_MS
+    AGING_CAP: int = AGING_CAP
+    LLM_RESOURCE_BACKOFF_MS: int = LLM_RESOURCE_BACKOFF_MS
+    TOOL_BACKOFF_MS: int = TOOL_BACKOFF_MS
+    SEARCH_FAIL_P: float = SEARCH_FAIL_P
+    SEARCH_SERVICE_MS: int = SEARCH_SERVICE_MS
+    READ_LOCAL_SERVICE_MS: int = READ_LOCAL_SERVICE_MS
+    WRITE_REPORT_SERVICE_MS: int = WRITE_REPORT_SERVICE_MS
+    RECALL_CPU_MS: int = RECALL_CPU_MS
+    SHORT_LLM_TOKENS: int = SHORT_LLM_TOKENS
+    LONG_LLM_TOKENS: int = LONG_LLM_TOKENS
+    IO_LLM_TOKENS: int = IO_LLM_TOKENS
+    SHORT_LLM_MS: int = SHORT_LLM_MS
+    LONG_LLM_MS: int = LONG_LLM_MS
+    IO_LLM_MS: int = IO_LLM_MS
+    PARSE_FAIL_CPU_MS: int = PARSE_FAIL_CPU_MS
+    RESOURCE_FAIL_CPU_MS: int = RESOURCE_FAIL_CPU_MS
+    EXPERIMENT_N: int = EXPERIMENT_N
+    EXPERIMENT_SEED: int = EXPERIMENT_SEED
+    ARRIVAL_GAP_MS: int = ARRIVAL_GAP_MS
+    CONTEXT_SOFT_CAP_TOKENS: int = CONTEXT_SOFT_CAP_TOKENS
+    HTTP_TIMEOUT_S: int = HTTP_TIMEOUT_S
+    HTTP_MAX_TOKENS: int = HTTP_MAX_TOKENS
+    enable_fail_penalty: bool = True
+    enable_io_boost: bool = True
+    tool_root: Path = Path("var/tool_root")
+    persistent_path: Path = Path("var/memory/completed.jsonl")
+    trace_dir: Path = Path("var/trace")
