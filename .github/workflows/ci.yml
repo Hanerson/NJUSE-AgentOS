@@ -112,9 +112,42 @@ jobs:
           assert "A=DONE B=DONE tool_done.ts_ms=540" in overlap, overlap
           PY
 
+  role-b-gate:
+    name: Role B acceptance gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      # Role B owns context snapshots, syscall validation/dispatch, the static
+      # permission table, confirmation, tool events, memory recall, and the
+      # single-step Runtime contract.
+      - name: Role B tests
+        run: |
+          python -m pytest -q \
+            tests/test_context_switch.py \
+            tests/test_syscall_perm.py \
+            tests/test_runtime_step.py \
+            tests/test_issue_clock.py \
+            tests/test_tool_overlap.py \
+            tests/test_snapshot_owner.py
+
   package:
     name: Build distributions
-    needs: [test, role-a-gate]
+    needs: [test, role-a-gate, role-b-gate]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

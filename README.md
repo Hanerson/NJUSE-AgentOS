@@ -59,6 +59,7 @@ python -m agentos.workloads.demo_overlap
 
 - 全量测试矩阵：Ubuntu（Python 3.11/3.12/3.13）与 Windows（Python 3.12）
 - **Role A acceptance gate**：独立运行 PCB、虚拟时钟、主循环、FCFS、RR 的测试与验收演示
+- **Role B acceptance gate**：独立运行上下文、系统调用、权限、确认、工具与一步运行时测试
 - 构建 sdist/wheel 并上传 artifact
 
 打 `v*` tag 时 `release.yml` 会重新测试、构建并创建 GitHub Release。详见 [CI/CD 说明](docs/ci.md)。
@@ -69,6 +70,7 @@ python -m agentos.workloads.demo_overlap
 - [课程作业说明（PDF）](docs/reference/L10-期末大作业agentos.pdf)
 - [四人分工表](docs/reference/ref.png)
 - [Role A 验收记录](docs/reports/role-a-acceptance.md)
+- [Role B 验收记录](docs/reports/role-b-acceptance.md)
 - [CI/CD 说明](docs/ci.md)
 
 ## 开发分工
@@ -76,6 +78,6 @@ python -m agentos.workloads.demo_overlap
 | 角色 | 职责 | 主要文件 | 状态 |
 | --- | --- | --- | --- |
 | A 内核 | PCB、虚拟时钟、主循环、FCFS、RR | `pcb.py`、`clock.py`、`loop.py`、`sched/fifo.py`、`sched/rr.py` | 已完成，验收 1 通过 |
-| B 系统调用 | 上下文、权限、工具、确认 | `context.py`、`syscall.py`、`perm.py`、`tool.py`、`runtime.py` | 代码已具备；`test_context_switch.py`、`test_syscall_perm.py` 待补 |
+| B 系统调用 | 上下文、权限、工具、确认 | `context.py`、`syscall.py`、`perm.py`、`tool.py`、`runtime.py` | 已完成；上下文、权限、工具、确认与 Runtime 门禁通过 |
 | C 策略与实验 | 失败感知优先级、消融、指标口径 | `sched/fail_priority.py`、`workloads/mix.py` | 未开始（`base.py` 已预留优先级带接口） |
 | D 轨迹与演示 | 事件日志、实验驱动、HTTP 桩、讲稿 | `trace.py`、`experiments/run_sched.py`、`llm/http.py`、`demo_*.py` | `trace.py` 与 `demo_overlap/preempt` 已具备；实验驱动与 HTTP 后端待补 |
