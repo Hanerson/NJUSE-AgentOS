@@ -178,4 +178,6 @@ class SyscallDispatcher:
             result.error_class.value,
             result.next_state.value,
             result.observation_summary,
+            tokens=result.tokens,
+            cpu_ms=result.cpu_ms,
         )

@@ -98,7 +98,22 @@ class Trace:
     def syscall_enter(self, pcb: PCB, name: str) -> None:
         self.emit("syscall_enter", pid=pcb.pid, name=name, step_index=pcb.step_index)
 
-    def syscall_exit(self, pcb: PCB, name: str, error_class: str, next_state: str, summary: str) -> None:
+    def syscall_exit(
+        self,
+        pcb: PCB,
+        name: str,
+        error_class: str,
+        next_state: str,
+        summary: str,
+        tokens: int = 0,
+        cpu_ms: int = 0,
+    ) -> None:
+        """The token fields let the experiment driver separate wasted and retry.
+
+        ``consecutive_*`` are read before ``apply`` updates them, so they describe
+        the counters at the start of this model step.  That is the definition of
+        ``retry_llm_tokens``; do not move this call after ``apply``.
+        """
         self.emit(
             "syscall_exit",
             pid=pcb.pid,
@@ -106,6 +121,10 @@ class Trace:
             error_class=error_class,
             next_state=next_state,
             observation_summary=summary[:80],
+            tokens=tokens,
+            cpu_ms=cpu_ms,
+            consecutive_llm_failures=pcb.consecutive_llm_failures,
+            consecutive_tool_failures=pcb.consecutive_tool_failures,
         )
 
     def perm_check(self, pcb: PCB, tool: str, decision: str) -> None:
