@@ -1,15 +1,15 @@
 # CI/CD 说明
 
-工作流位于 `.github/workflows/`，使用 GitHub Actions。目标是：后续 B/C/D 角色继续提交时，Role A 的内核行为（PCB、虚拟时钟、主循环、FCFS、RR）一旦被破坏，PR 不能合并。
+工作流位于 `.github/workflows/`，使用 GitHub Actions。目标是：后续角色继续提交时，Role A 的内核行为（PCB、虚拟时钟、主循环、FCFS、RR）与 Role C 的策略/指标行为一旦被破坏，PR 不能合并。
 
 ## 触发方式
 
 | 工作流 | 触发 | 内容 |
 | --- | --- | --- |
-| [CI](../.github/workflows/ci.yml) | push 到 `main`、任意 PR、手动触发 | 测试矩阵、Role A 门禁、构建发行包 |
+| [CI](../.github/workflows/ci.yml) | push 到 `main`、任意 PR、手动触发 | 测试矩阵、Role A/C 门禁、构建发行包 |
 | [Release](../.github/workflows/release.yml) | push `v*` tag | 完整测试、构建、创建 GitHub Release 并附上 sdist/wheel |
 
-## CI 的三个 Job
+## CI 的四个 Job
 
 ### 1. `tests (os, py版本)`
 
@@ -41,9 +41,22 @@ tests/test_rr_quantum.py       验收 1：t=160 队列 [S, L]，L 从第 4 步�
 
 演示子进程有 10 秒超时，配合 `test_no_sleep` 防止有人用 `time.sleep` 伪造虚拟时间。
 
-### 3. `Build distributions`
+### 3. `Role C acceptance gate`
 
-在 `test` 与 `role-a-gate` 都通过后，构建 sdist 和 wheel，安装 wheel 做导入冒烟测试，并上传 `dist` artifact。
+Role C 的专用门禁，覆盖失败感知策略、消融、混合负载与指标口径：
+
+```text
+tests/test_fail_priority.py    五带、老化、I/O 加分、失败惩罚、K=3
+tests/test_ablation.py         --no-fail-penalty / --no-io-boost
+tests/test_metrics.py          p95、wasted/retry、short_held、mismatch
+tests/test_mix_determinism.py  固定种子 40 任务、同种子轨迹一致
+```
+
+随后运行验收 3，并断言 `flaky` 两次 `priority_decay`（2→1、1→0），第三次 `FAILED` 且不再入队。
+
+### 4. `Build distributions`
+
+在 `test`、`role-a-gate` 与 `role-c-gate` 都通过后，构建 sdist 和 wheel，安装 wheel 做导入冒烟测试，并上传 `dist` artifact。
 
 ## 让门禁真正生效（仓库推送后手动做一次）
 
@@ -51,6 +64,7 @@ tests/test_rr_quantum.py       验收 1：t=160 队列 [S, L]，L 从第 4 步�
 2. 分支填 `main`，勾选 **Require status checks to pass before merging**。
 3. 把以下检查设为 required：
    - `Role A acceptance gate`
+   - `Role C acceptance gate`
    - `tests (ubuntu-latest, py3.11)`
    - `tests (ubuntu-latest, py3.12)`
    - `tests (ubuntu-latest, py3.13)`
@@ -84,6 +98,18 @@ python -m agentos.workloads.demo_preempt
 python -m agentos.workloads.demo_overlap
 ```
 
+只跑 Role C 门禁：
+
+```bash
+python -m pytest -q \
+  tests/test_fail_priority.py \
+  tests/test_ablation.py \
+  tests/test_metrics.py \
+  tests/test_mix_determinism.py
+
+python -m agentos.workloads.demo_fail
+```
+
 ## 发布流程（CD）
 
 版本号当前在 `pyproject.toml` 的 `version`。发布时：
@@ -100,6 +126,6 @@ tag 推送后 `Release` 工作流会重新跑测试、构建 `dist/*.whl` 与 `d
 ## 后续角色接入建议
 
 - **B（系统调用）**：补 `tests/test_context_switch.py`、`tests/test_syscall_perm.py` 后，在 CI 的 `test` job 里自动包含；Role A 门禁无需修改。
-- **C（策略）**：新增 `sched/fail_priority.py` 时，确保 `base.py` 的 `uses_bands` 路径不改变 FCFS/RR 行为；`test_fifo_convoy.py` 与 `test_rr_quantum.py` 必须保持绿。
+- **C（策略）**：已完成，后续改动必须保持 `Role C acceptance gate` 全绿；`base.py` 的 `uses_bands` 路径不得改变 FCFS/RR 行为，`test_fifo_convoy.py` 与 `test_rr_quantum.py` 必须保持绿。
 - **D（实验驱动）**：新增 `experiments/run_sched.py`、`llm/http.py` 时，不要把 `time.sleep` 带进 `agentos/kernel/`、`agentos/llm/scripted.py`、`agentos/workloads/`，`test_no_sleep.py` 会扫描 AST。
 - 如果新增 Python 版本，只改 `ci.yml` 的矩阵即可。

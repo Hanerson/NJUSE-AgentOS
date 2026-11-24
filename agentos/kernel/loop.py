@@ -23,6 +23,7 @@ from agentos.kernel.pcb import (
 from agentos.kernel.perm import PermTable
 from agentos.kernel.runtime import Runtime
 from agentos.kernel.sched.base import SchedulerBase, compute_effective_priority
+from agentos.kernel.sched.fail_priority import FailPriorityScheduler
 from agentos.kernel.sched.fifo import FifoScheduler
 from agentos.kernel.sched.rr import RRScheduler
 from agentos.kernel.syscall import SyscallDispatcher
@@ -411,4 +412,6 @@ def _make_scheduler(policy: str, cfg: Config) -> SchedulerBase:
         return FifoScheduler()
     if policy == "rr":
         return RRScheduler(cfg)
+    if policy in ("fail", "fail_priority"):
+        return FailPriorityScheduler(cfg)
     raise KernelError(f"unknown policy {policy}")

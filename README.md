@@ -23,7 +23,8 @@ NJUSE-AgentOS/
 │   │       └── rr.py           # Round-Robin（token 量子）
 │   ├── llm/                    # 模型后端（脚本后端）
 │   ├── memory/                 # 持久记录
-│   └── workloads/              # 演示负载
+│   ├── experiments/            # 指标口径（run_sched 由 Role D 接）
+│   └── workloads/              # 演示负载与 mix.py
 ├── tests/                      # pytest 测试
 ├── docs/                       # 设计文档与参考资料
 │   ├── design/                 # 内核设计文档
@@ -49,6 +50,9 @@ python -m agentos.workloads.demo_preempt
 
 # 验收 2：工具等待期间另一个任务占用模型（FCFS）
 python -m agentos.workloads.demo_overlap
+
+# 验收 3：失败感知策略降权，第 3 次失败不再入队
+python -m agentos.workloads.demo_fail
 ```
 
 演示命令会在当前目录生成运行时数据 `var/`，该目录不纳入版本控制。
@@ -59,6 +63,7 @@ python -m agentos.workloads.demo_overlap
 
 - 全量测试矩阵：Ubuntu（Python 3.11/3.12/3.13）与 Windows（Python 3.12）
 - **Role A acceptance gate**：独立运行 PCB、虚拟时钟、主循环、FCFS、RR 的测试与验收演示
+- **Role C acceptance gate**：独立运行失败感知策略、消融、混合负载、指标口径测试与验收 3
 - 构建 sdist/wheel 并上传 artifact
 
 打 `v*` tag 时 `release.yml` 会重新测试、构建并创建 GitHub Release。详见 [CI/CD 说明](docs/ci.md)。
@@ -69,6 +74,7 @@ python -m agentos.workloads.demo_overlap
 - [课程作业说明（PDF）](docs/reference/L10-期末大作业agentos.pdf)
 - [四人分工表](docs/reference/ref.png)
 - [Role A 验收记录](docs/reports/role-a-acceptance.md)
+- [Role C 验收记录](docs/reports/role-c-acceptance.md)
 - [CI/CD 说明](docs/ci.md)
 
 ## 开发分工
@@ -77,5 +83,5 @@ python -m agentos.workloads.demo_overlap
 | --- | --- | --- | --- |
 | A 内核 | PCB、虚拟时钟、主循环、FCFS、RR | `pcb.py`、`clock.py`、`loop.py`、`sched/fifo.py`、`sched/rr.py` | 已完成，验收 1 通过 |
 | B 系统调用 | 上下文、权限、工具、确认 | `context.py`、`syscall.py`、`perm.py`、`tool.py`、`runtime.py` | 代码已具备；`test_context_switch.py`、`test_syscall_perm.py` 待补 |
-| C 策略与实验 | 失败感知优先级、消融、指标口径 | `sched/fail_priority.py`、`workloads/mix.py` | 未开始（`base.py` 已预留优先级带接口） |
+| C 策略与实验 | 失败感知优先级、消融、指标口径 | `sched/fail_priority.py`、`workloads/mix.py`、`experiments/metrics.py` | 已完成，验收 3 通过 |
 | D 轨迹与演示 | 事件日志、实验驱动、HTTP 桩、讲稿 | `trace.py`、`experiments/run_sched.py`、`llm/http.py`、`demo_*.py` | `trace.py` 与 `demo_overlap/preempt` 已具备；实验驱动与 HTTP 后端待补 |
