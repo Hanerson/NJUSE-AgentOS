@@ -63,6 +63,7 @@ python -m agentos.workloads.demo_fail
 
 - 全量测试矩阵：Ubuntu（Python 3.11/3.12/3.13）与 Windows（Python 3.12）
 - **Role A acceptance gate**：独立运行 PCB、虚拟时钟、主循环、FCFS、RR 的测试与验收演示
+- **Role C acceptance gate**：独立运行失败感知策略、消融、混合负载、指标口径测试与验收 3
 - 构建 sdist/wheel 并上传 artifact
 
 打 `v*` tag 时 `release.yml` 会重新测试、构建并创建 GitHub Release。详见 [CI/CD 说明](docs/ci.md)。

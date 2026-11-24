@@ -1,7 +1,7 @@
 # Role C（策略与实验）验收记录
 
 依据：[分工表](../reference/ref.png)、[设计文档](../design/AgentOS-调度内核设计.md) 的 PR7/PR8 与验收 3。
-检查日期：2026-11-06。
+检查日期：2026-11-06；CI 门禁补充：2026-11-24。
 
 ## 结论
 
@@ -19,6 +19,22 @@ python -m pytest -q
 ```
 
 其中 28 个是本次新增的 C 范围测试；原有 `test_fifo_convoy`、`test_tool_overlap`、`test_rr_quantum` 等仍通过。
+
+## CI 门禁
+
+`.github/workflows/ci.yml` 已加入 `Role C acceptance gate`，独立执行：
+
+```bash
+python -m pytest -q \
+  tests/test_fail_priority.py \
+  tests/test_ablation.py \
+  tests/test_metrics.py \
+  tests/test_mix_determinism.py
+
+python -m agentos.workloads.demo_fail
+```
+
+门禁断言 28 项测试全绿，并检查验收 3 的输出：两次 `priority_decay`（2→1、1→0），第三次失败后 `FAILED` 且不再入队。
 
 ## 需求对照
 
